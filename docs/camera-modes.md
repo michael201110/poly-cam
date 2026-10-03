@@ -15,7 +15,18 @@ FOV is adjustable from the panel. The chase rigs add a small speed response. Rot
 
 ## Montage and timeline
 
-Montage Mode reacts to speed threshold crossings, acceleration, fast straights, yaw changes, inferred jump/landing motion, recent rig history, and a five-second maximum shot duration. It enforces a 1.5-second minimum shot length to prevent rapid switching. It uses a persisted xorshift seed, which can be reproduced by restoring the stored seed in `localStorage` key `poly-cam.v1`. The current car API does not expose steering or authoritative airborne/landing flags, so those events are estimated from transform changes.
+Montage Mode chooses framing from the car's speed, filtered turn rate, acceleration, and estimated jump/landing motion. It mixes follow shots, wide establishing views, roadside passes, and short mount details. Recent rigs and repeated shot families get lower selection weights.
+
+- **Corners:** favors side tracking and an elevated drone view, placing side cameras outside the turn.
+- **Fast straights:** mixes low chase, fresh trackside/fly-by shots, and occasional bonnet or wheel details.
+- **Roadside passes:** creates a new world-space anchor ahead of the car using its current movement direction and speed. Holds the approach and pass, then changes shots when the car has passed or moved too far away.
+- **Shot variations:** changes distance, height, side, mount, and FOV within a rig. Lower FOV gives trackside shots a longer-lens feel. The panel's FOV remains the base setting; montage applies an offset for each shot.
+- **Transitions:** uses clean cuts between distant viewpoints and blends between compatible chase views. Your manual transition setting is retained for manual cameras and timelines.
+- **Drone:** holds altitude above the car in world space with a level horizon, including during banking or a rollover.
+
+Use **Montage pace** to choose **Cinematic** (default: roughly 4–7 seconds per shot, at least 2.8 seconds), **Balanced** (roughly 3–5 seconds, at least 2.1 seconds), or **Energetic** (roughly 2.5–4 seconds, at least 1.4 seconds). Idle shots hold longer, mount details are shorter, and action cues can change a shot after the minimum hold. A badly framed roadside shot or rollover may trigger an earlier recovery cut. Manually selecting a camera or pressing F7 pauses montage; F8 starts it again. Pace is saved between sessions.
+
+Shot choices use a persisted xorshift seed in `localStorage` key `poly-cam.v1`. The current car API does not expose authoritative contact or landing flags, so those events are estimated. Automatic placement does not inspect track geometry or guarantee an unobstructed view; manually placed trackside cameras remain available when you need exact composition.
 
 The timeline is a JSON array with `time` (seconds) and `mode` (mode name or numeric mode index), for example:
 

@@ -16,10 +16,11 @@ export class ChaseRig extends CameraRig {
     constructor(low = false) { super(low ? "Low Chase" : "Cinematic Chase"); this.low = low; }
     compose({ position, quaternion, speed }, runtime, out) {
         const speedScale = clamp(speed / 220, 0, 1);
-        const distance = this.low ? 7 + speedScale * 1.3 : 8.5;
-        const height = this.low ? 0.85 : 2.15;
-        localPoint(out.position, position, quaternion, this.low ? 0.18 : 0.25, height, -distance);
-        localPoint(out.target, position, quaternion, 0, this.low ? 0.55 : 1.1, 3.4 + speedScale * 2.5);
+        const shot = runtime.montageShot;
+        const distance = shot?.distance ?? (this.low ? 7 + speedScale * 1.3 : 8.5);
+        const height = shot?.height ?? (this.low ? 0.85 : 2.15);
+        localPoint(out.position, position, quaternion, shot?.lateral ?? (this.low ? 0.18 : 0.25), height, -distance);
+        localPoint(out.target, position, quaternion, 0, this.low ? 0.55 : 1.1, (shot?.lookAhead ?? 3.4) + speedScale * 2.5);
         out.fov = runtime.fov + (this.low ? 7 : 0) + Math.min(5, speedScale * 4);
         out.positionSharpness = this.low ? 5.5 : 3.4;
         out.targetSharpness = 6;
@@ -31,7 +32,7 @@ export class ChaseRig extends CameraRig {
 export class FrontChaseRig extends CameraRig {
     constructor() { super("Front Chase"); }
     compose({ position, quaternion }, runtime, out) {
-        localPoint(out.position, position, quaternion, 0, 2.2, 9);
+        localPoint(out.position, position, quaternion, 0, runtime.montageShot?.height ?? 2.2, runtime.montageShot?.distance ?? 9);
         localPoint(out.target, position, quaternion, 0, 1, -0.4);
         out.fov = runtime.fov; out.positionSharpness = 3; out.targetSharpness = 7; out.rotationSharpness = 7;
         return out;
@@ -41,7 +42,8 @@ export class FrontChaseRig extends CameraRig {
 export class SideTrackingRig extends CameraRig {
     constructor() { super("Side Tracking"); }
     compose({ position, quaternion }, runtime, out) {
-        localPoint(out.position, position, quaternion, runtime.side * 8, 2.2, runtime.longitudinal);
+        const shot = runtime.montageShot;
+        localPoint(out.position, position, quaternion, runtime.side * (shot?.distance ?? 8), shot?.height ?? 2.2, shot?.longitudinal ?? runtime.longitudinal);
         localPoint(out.target, position, quaternion, 0, 0.9, 0.3);
         out.fov = runtime.fov; out.positionSharpness = 3; out.targetSharpness = 6; out.rotationSharpness = 7;
         return out;
@@ -51,10 +53,11 @@ export class SideTrackingRig extends CameraRig {
 export class OrbitRig extends CameraRig {
     constructor() { super("Orbit Cam"); }
     compose({ position, quaternion, dt }, runtime, out) {
-        runtime.orbitAngle += dt * runtime.orbitSpeed * runtime.orbitDirection;
-        const x = Math.sin(runtime.orbitAngle) * runtime.orbitRadius;
-        const z = Math.cos(runtime.orbitAngle) * runtime.orbitRadius;
-        localPoint(out.position, position, quaternion, x, runtime.orbitHeight, z);
+        const shot = runtime.montageShot;
+        runtime.orbitAngle += dt * (shot?.orbitSpeed ?? runtime.orbitSpeed) * (shot?.side ?? runtime.orbitDirection);
+        const x = Math.sin(runtime.orbitAngle) * (shot?.radius ?? runtime.orbitRadius);
+        const z = Math.cos(runtime.orbitAngle) * (shot?.radius ?? runtime.orbitRadius);
+        localPoint(out.position, position, quaternion, x, shot?.height ?? runtime.orbitHeight, z);
         localPoint(out.target, position, quaternion, 0, 1, 0);
         out.fov = runtime.fov; out.positionSharpness = 2.3; out.targetSharpness = 4; out.rotationSharpness = 5;
         return out;
@@ -64,7 +67,16 @@ export class OrbitRig extends CameraRig {
 export class DroneRig extends CameraRig {
     constructor() { super("Drone Cam"); }
     compose({ position, quaternion }, runtime, out) {
-        localPoint(out.position, position, quaternion, 0, runtime.droneAltitude, -5);
+        const shot = runtime.montageShot;
+        // Keep altitude in world space so jumps and banking do not roll the drone
+        // below the car. Trail along its horizontal heading with a level horizon.
+        const forwardX = 2 * (quaternion.x * quaternion.z + quaternion.w * quaternion.y);
+        const forwardZ = 1 - 2 * (quaternion.x * quaternion.x + quaternion.y * quaternion.y);
+        const length = Math.hypot(forwardX, forwardZ);
+        const trail = shot?.trail ?? 5;
+        out.position.x = position.x - (length > 0.01 ? forwardX / length : 0) * trail;
+        out.position.y = position.y + (shot?.altitude ?? runtime.droneAltitude);
+        out.position.z = position.z - (length > 0.01 ? forwardZ / length : 1) * trail;
         localPoint(out.target, position, quaternion, 0, 0.9, 2);
         out.fov = runtime.fov; out.positionSharpness = 1.6; out.targetSharpness = 4.5; out.rotationSharpness = 4;
         return out;
@@ -74,20 +86,22 @@ export class DroneRig extends CameraRig {
 export class TracksideRig extends CameraRig {
     constructor() { super("Trackside Cam"); }
     compose({ position }, runtime, out) {
-        if (!runtime.tracksidePlaced) {
+        const shot = runtime.montageShot;
+        if (!shot?.anchor && !runtime.tracksidePlaced) {
             runtime.trackside.x = position.x + 12; runtime.trackside.y = position.y + 4; runtime.trackside.z = position.z + 18;
             runtime.tracksideLook.x = position.x; runtime.tracksideLook.y = position.y + 0.75; runtime.tracksideLook.z = position.z;
             runtime.tracksidePlaced = true;
         }
-        out.position.x = runtime.trackside.x; out.position.y = runtime.trackside.y; out.position.z = runtime.trackside.z;
-        if (runtime.tracksideFixed) {
+        const anchor = shot?.anchor || runtime.trackside;
+        out.position.x = anchor.x; out.position.y = anchor.y; out.position.z = anchor.z;
+        if (!shot && runtime.tracksideFixed) {
             out.target.x = runtime.tracksideLook.x; out.target.y = runtime.tracksideLook.y; out.target.z = runtime.tracksideLook.z;
         } else {
             out.target.x = position.x; out.target.y = position.y + 0.75; out.target.z = position.z;
         }
         out.fov = runtime.fov; out.positionSharpness = 100;
-        out.targetSharpness = runtime.tracksideFixed ? 100 : runtime.panSharpness;
-        out.rotationSharpness = runtime.tracksideFixed ? 100 : runtime.panSharpness;
+        out.targetSharpness = shot ? 100 : runtime.tracksideFixed ? 100 : runtime.panSharpness;
+        out.rotationSharpness = shot ? 30 : runtime.tracksideFixed ? 100 : runtime.panSharpness;
         return out;
     }
 }
@@ -97,13 +111,15 @@ export class FlyByRig extends CameraRig {
     compose({ position, quaternion, dt }, runtime, out) {
         runtime.flybyClock += dt;
         const phase = runtime.flybyClock % 7;
-        if (phase < 0.12 || runtime.flybyAnchor === null) {
+        const shot = runtime.montageShot;
+        if (!shot?.anchor && (phase < 0.12 || runtime.flybyAnchor === null)) {
             localPoint(runtime.flybyAnchor = runtime.flybyAnchor || point(), position, quaternion, runtime.flybySide * 5, 2.8, runtime.flybyDistance);
         }
-        out.position.x = runtime.flybyAnchor.x; out.position.y = runtime.flybyAnchor.y; out.position.z = runtime.flybyAnchor.z;
+        const anchor = shot?.anchor || runtime.flybyAnchor;
+        out.position.x = anchor.x; out.position.y = anchor.y; out.position.z = anchor.z;
         out.target.x = position.x; out.target.y = position.y + 0.7; out.target.z = position.z;
         out.fov = runtime.fov - 8; out.positionSharpness = 100;
-        out.targetSharpness = phase > 4.8 ? 1.8 : 8; out.rotationSharpness = phase > 4.8 ? 2.5 : 9;
+        out.targetSharpness = shot ? 100 : phase > 4.8 ? 1.8 : 8; out.rotationSharpness = shot ? 30 : phase > 4.8 ? 2.5 : 9;
         return out;
     }
 }

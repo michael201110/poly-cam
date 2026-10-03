@@ -37,3 +37,5 @@ For v0.1.6, the game checks passed for:
 - No vehicle transform, speed, or car-state changes inside the camera callback.
 
 Replay playback, other mods, mobile/touch use, and later game versions are outside this automated check.
+
+Version 0.1.7 replaces the montage director and adjusts shot framing. It has been built successfully; the checks listed above describe v0.1.6, not a new game check of the montage changes.

@@ -20,6 +20,7 @@ PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture di
 
 - `src/main.mod.js`: PML lifecycle and version-specific camera hooks.
 - `PolyCam`: transforms, transitions, director, bookmarks and timeline state.
+- `shot-director.js`: filtered motion cues, weighted shot selection, pacing, framing variants and fresh roadside anchors. Uses per-car presentation data and the camera clock.
 - `rigs.js`: shared `CameraRig` contract and ten camera compositions.
 - `input.js`: hotkeys and freecam key isolation.
 - `ui.js`: panel, clean capture, mode and timeline controls.

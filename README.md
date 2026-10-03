@@ -6,15 +6,17 @@ Poly-Cam is a standalone PolyModLoader plugin for cinematic PolyTrack capture. I
 
 The first release targets PolyTrack 0.6.3. It establishes the camera hook and implements cinematic chase, low chase, front chase, side tracking, orbit, drone, trackside, fly-by, vehicle mount, and freecam rigs. It includes shot transitions, an event-weighted montage director, bookmarks, hotkeys, and a compact panel. Replay cars use the same vehicle camera hook as live cars.
 
-Version 0.1.6 fixes the startup hook that left earlier releases showing “Hook: waiting.” It also fixes camera direction, FOV, transitions, freecam movement, the side button, and minimize/restore. The release was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
+Version 0.1.7 improves Montage Mode with motion-aware shot selection, varied framing, fresh roadside placements, a level drone view, clean cuts, and three pacing choices. Version 0.1.6 fixed the startup hook and was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge; the 0.1.7 montage changes have been built but not checked in game. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
 
 ## Install
 
-**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.6`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.6)
+**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.7`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.7)
 
-Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.6` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
+Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.7` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
 
 Start a run, then click **OFF** in the panel to turn it **ON**, or press **F6**. Choose a mode from the dropdown. The status should read **Camera connected**. Click **−** to minimize and **+** to expand.
+
+For automatic shots, click **Montage** or press **F8** and leave **Montage pace** on **Cinematic**. Choose a camera manually to pause the director.
 
 ## Controls
 

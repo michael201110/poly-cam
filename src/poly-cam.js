@@ -2,6 +2,7 @@ import { clamp, finiteVector, smoothstep } from "./math.js";
 import { MODES, createRigs } from "./rigs.js";
 import { InputController } from "./input.js";
 import { UIController } from "./ui.js";
+import { ShotDirector, MONTAGE_PACES } from "./shot-director.js";
 
 const STORAGE_KEY = "poly-cam.v1";
 
@@ -18,7 +19,7 @@ function runtimeState() {
         lastFov: null, goalQuaternion: null, priorQuaternion: null,
         output: { position: { x: 0, y: 0, z: 0 }, target: { x: 0, y: 0, z: 0 }, fov: 72, positionSharpness: 4, targetSharpness: 4, rotationSharpness: 5 },
         smoothPosition: { x: 0, y: 0, z: 0 }, smoothTarget: { x: 0, y: 0, z: 0 },
-        history: [], pendingDirectorEvent: null, lastDirectorEvent: null, airborne: false, descending: false,
+        directorState: null, montageShot: null,
         context: { position: null, quaternion: null, speed: 0, previousSpeed: 0, acceleration: 0, dt: 0 }
     };
 }
@@ -44,6 +45,9 @@ export class PolyCam {
         this.pendingBookmark = null;
         this.lastShotAt = 0;
         this.directorSeed = 0x51f15e;
+        this.director = new ShotDirector(() => this.random());
+        this.montagePace = "Cinematic";
+        this.montageSerial = 0;
         this.transitionMode = "BLEND";
         this.fixedTracksideOrientation = false;
         this.cameraHookSeen = false;
@@ -57,6 +61,7 @@ export class PolyCam {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
             this.bookmarks = Array.isArray(saved.bookmarks) ? saved.bookmarks : [];
             this.directorSeed = Number.isInteger(saved.seed) ? saved.seed >>> 0 : this.directorSeed;
+            if (Object.hasOwn(MONTAGE_PACES, saved.pace)) this.montagePace = saved.pace;
         } catch { /* persistent storage may be unavailable */ }
         this.input.initialize(pml);
     }
@@ -73,8 +78,9 @@ export class PolyCam {
         return this.directorSeed / 4294967296;
     }
 
-    setMode(index) {
+    setMode(index, { directed = false } = {}) {
         this.modeIndex = index;
+        if (!directed && this.montage) { this.montage = false; this.montageSerial++; }
         this.lastShotAt = performance.now();
         this.ui.refresh();
     }
@@ -86,7 +92,18 @@ export class PolyCam {
         else { this.restoreNativeCameras(); this.input.keys.clear(); }
         this.ui.refresh();
     }
-    toggleMontage() { this.montage = !this.montage; if (this.montage && !this.enabled) this.toggleEnabled(); this.ui.refresh(); }
+    toggleMontage() {
+        this.montage = !this.montage;
+        this.montageSerial++;
+        if (this.montage) {
+            this.timelineState.playing = false;
+            this.input.keys.clear();
+            if (this.mode === "Freecam") this.setMode(0, { directed: true });
+            if (!this.enabled) this.toggleEnabled();
+        }
+        this.ui.refresh();
+    }
+    setMontagePace(pace) { if (!Object.hasOwn(MONTAGE_PACES, pace)) return; this.montagePace = pace; this.montageSerial++; this.persist(); this.ui.refresh(); }
     toggleCleanCapture() { this.cleanCapture = !this.cleanCapture; this.ui.setClean(this.cleanCapture); }
 
     selectCamera(camera) {
@@ -160,6 +177,7 @@ export class PolyCam {
             rt.initialized = true;
             rt.lastFov = camera.fov;
             rt.currentFov = camera.fov;
+            rt.previousSpeed = speed;
             rt.smoothPosition.x = camera.position.x; rt.smoothPosition.y = camera.position.y; rt.smoothPosition.z = camera.position.z;
             rt.smoothTarget.x = position.x; rt.smoothTarget.y = position.y; rt.smoothTarget.z = position.z;
             rt.goalQuaternion = camera.quaternion.clone(); rt.priorQuaternion = camera.quaternion.clone();
@@ -176,6 +194,9 @@ export class PolyCam {
             rt.activationSerial = this.activationSerial;
             rt.priorQuaternion.copy(camera.quaternion);
             rt.currentFov = camera.fov;
+            rt.directorState = null; rt.montageShot = null;
+            rt.previousPosition.x = position.x; rt.previousPosition.y = position.y; rt.previousPosition.z = position.z;
+            rt.previousQuaternion.copy(quaternion); rt.previousSpeed = speed;
             if (reactivated && this.mode === "Freecam") {
                 rt.freePosition.x = camera.position.x; rt.freePosition.y = camera.position.y; rt.freePosition.z = camera.position.z;
                 camera.rotation.setFromQuaternion(camera.quaternion, "YXZ");
@@ -209,12 +230,15 @@ export class PolyCam {
         context.acceleration = rt.acceleration;
         rt.shotTime += step;
         this.advanceTimeline(step);
-        if (this.montage && !this.timelineState.playing) this.directMontage(rt, context, now);
+        rt.shotChanged = false;
+        if (this.montage && !this.timelineState.playing) this.directMontage(rt, context);
+        else rt.montageShot = null;
 
-        if (rt.lastMode !== this.modeIndex) {
+        if (rt.lastMode !== this.modeIndex || rt.shotChanged) {
             const from = rt.renderPosition || camera.position;
             const dx = from.x - rt.smoothPosition.x, dy = from.y - rt.smoothPosition.y, dz = from.z - rt.smoothPosition.z;
-            rt.transition = this.transitionMode === "BLEND" && dx * dx + dy * dy + dz * dz <= 2500
+            const transition = rt.montageShot?.transition || this.transitionMode;
+            rt.transition = transition === "BLEND" && dx * dx + dy * dy + dz * dz <= 2500
                 ? { fromX: from.x, fromY: from.y, fromZ: from.z, elapsed: 0 }
                 : null;
             if (!rt.transition) {
@@ -291,47 +315,22 @@ export class PolyCam {
 
     }
 
-    directMontage(rt, context, now) {
-        const speed = context.speed;
-        const yawDelta = rt.previousQuaternion ? Math.abs(context.quaternion.y - rt.previousQuaternion.y) : 0;
-        const verticalSpeed = context.dt > 0 ? (context.position.y - rt.previousPosition.y) / context.dt : 0;
-        let event = null;
-        if (rt.airborne && rt.descending && verticalSpeed > -1) {
-            event = "landing"; rt.airborne = false; rt.descending = false;
-        } else if (!rt.airborne && verticalSpeed > 4) {
-            event = "jump"; rt.airborne = true;
-        } else if (rt.airborne && verticalSpeed < -2) {
-            rt.descending = true;
+    directMontage(rt, context) {
+        if (rt.montageSerial !== this.montageSerial) {
+            rt.directorState = null; rt.montageShot = null;
+            rt.montageSerial = this.montageSerial;
         }
-        if (!event && speed > 230 && context.previousSpeed <= 230) event = "pass";
-        if (!event && speed > 140 && context.acceleration > 35) event = "acceleration";
-        if (!event && yawDelta > 0.025) event = "corner";
-        if (!event && speed > 170 && yawDelta < 0.004) event = "fast-straight";
-        if (!event && speed < 70 && context.previousSpeed >= 70) event = "slow-section";
-        if (!event && rt.shotTime >= 5) event = "maximum-duration";
-        if (event) rt.pendingDirectorEvent = event;
-        else event = rt.pendingDirectorEvent;
-        if (!event) { rt.lastDirectorEvent = null; return; }
-        if (event === rt.lastDirectorEvent) { rt.pendingDirectorEvent = null; return; }
-        if (now - this.lastShotAt < 1500) return;
-
-        const candidates = event === "landing" ? [1, 0]
-            : event === "jump" ? [5, 6]
-            : event === "pass" || event === "acceleration" ? [7, 6]
-            : event === "corner" ? [6, 3]
-            : event === "fast-straight" ? [1, 2]
-            : event === "slow-section" ? [4, 0]
-            : [3, 5, 6, 7];
-        const filtered = candidates.filter((i) => i !== this.modeIndex && !rt.history.includes(i));
-        const options = filtered.length ? filtered : candidates.filter((i) => i !== this.modeIndex);
-        const next = options[Math.floor(this.random() * Math.max(1, options.length))] ?? 0;
-        rt.history.push(next); if (rt.history.length > 2) rt.history.shift();
-        this.setMode(next);
-        rt.lastDirectorEvent = event;
-        rt.pendingDirectorEvent = null;
-        rt.shotTime = 0;
-        this.lastShotAt = now;
-        this.persist();
+        const shot = this.director.update(rt, context, { mode: this.modeIndex, pace: this.montagePace });
+        const changed = shot !== rt.montageShot;
+        rt.montageShot = shot;
+        rt.fov = clamp(this.baseFov + shot.fovOffset, 30, 100);
+        rt.side = shot.side;
+        rt.mount = shot.mount || this.mount;
+        if (changed) {
+            rt.shotChanged = true;
+            this.setMode(shot.mode, { directed: true });
+            this.persist();
+        }
     }
 
     advanceTimeline(dt) {
@@ -386,7 +385,7 @@ export class PolyCam {
     }
 
     persist() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bookmarks: this.bookmarks, seed: this.directorSeed })); } catch { /* storage may be blocked */ }
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bookmarks: this.bookmarks, seed: this.directorSeed, pace: this.montagePace })); } catch { /* storage may be blocked */ }
     }
 
     dispose() {

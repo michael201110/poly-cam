@@ -1,4 +1,5 @@
 import { MODES } from "./rigs.js";
+import { MONTAGE_PACES } from "./shot-director.js";
 
 const STYLE = `
 #poly-cam-panel{position:fixed;z-index:2147483000;top:12px;right:12px;width:min(292px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:14px;color:#f4f7fa;background:rgba(10,16,22,.94);border:1px solid #ffffff30;border-radius:10px;font:12px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px #0008}
@@ -40,6 +41,7 @@ export class UIController {
             <div class="row"><label for="poly-cam-mode">Mode</label><select id="poly-cam-mode" class="mode">${MODES.map((m, i) => `<option value="${i}">${m}</option>`).join("")}</select></div>
             <div class="row"><label for="poly-cam-fov">FOV <span class="fov-label">72</span></label><input id="poly-cam-fov" class="fov" type="range" min="35" max="105" value="72"></div>
             <div class="row"><label>Transition</label><select class="transition"><option>CUT</option><option selected>BLEND</option></select></div>
+            <div class="row"><label for="poly-cam-pace">Montage pace</label><select id="poly-cam-pace" class="montage-pace">${Object.keys(MONTAGE_PACES).map(p => `<option>${p}</option>`).join("")}</select></div>
             <div class="row"><label>Side / mount</label><button data-action="side">Right</button><select class="mount"><option>Front bumper</option><option>Rear bumper</option><option>Bonnet</option><option selected>Roof</option><option>Front-left wheel</option><option>Front-right wheel</option><option>Rear wheel</option></select></div>
             <div class="row"><label>Fixed trackside orientation</label><input class="trackside-fixed" type="checkbox"></div>
             <div class="actions">
@@ -90,6 +92,7 @@ export class UIController {
         root.querySelector(".trackside-fixed").addEventListener("change", e => { this.owner.fixedTracksideOrientation = e.target.checked; if (this.activeRuntime) this.activeRuntime.tracksideFixed = e.target.checked; });
         root.querySelector(".timeline-loop").addEventListener("change", e => { this.owner.timelineState.loop = e.target.checked; });
         root.querySelector(".transition").addEventListener("change", e => { this.owner.transitionMode = e.target.value; });
+        root.querySelector(".montage-pace").addEventListener("change", e => this.owner.setMontagePace(e.target.value));
         root.querySelector(".bookmark").addEventListener("change", e => { if (e.target.value !== "") this.owner.restoreBookmark(Number(e.target.value)); });
         this.refresh(); this.setHookStatus(this.hookStatus);
     }
@@ -110,6 +113,7 @@ export class UIController {
         this.root.querySelector(".mount").value = this.owner.mount; this.root.querySelector("[data-action=side]").textContent = this.owner.side > 0 ? "Right" : "Left";
         this.root.querySelector(".trackside-fixed").checked = this.owner.fixedTracksideOrientation; this.root.querySelector(".timeline-loop").checked = this.owner.timelineState.loop;
         this.root.querySelector(".transition").value = this.owner.transitionMode;
+        this.root.querySelector(".montage-pace").value = this.owner.montagePace;
         this.root.querySelector(".bookmark").innerHTML = `<option value="">Bookmarks</option>${this.owner.bookmarks.map((b, i) => `<option value="${i}">${this.escape(b.name)}</option>`).join("")}`;
     }
     setClean(enabled) {

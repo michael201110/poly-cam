@@ -5,8 +5,10 @@ import { createRigs } from "../src/rigs.js";
 import { InputController } from "../src/input.js";
 import { PolyCam } from "../src/poly-cam.js";
 
+const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+
 test("camera patch is installed before game classes are created, and native update is preserved", async () => {
-    const code = (await readFile("0.1.6/main.mod.js", "utf8")).replace(
+    const code = (await readFile(`${version}/main.mod.js`, "utf8")).replace(
         /import \{ PolyMod, MixinType \} from "https:[^"]+";/,
         "class PolyMod { preInit = () => {}; } const MixinType = { INSERT: 4 };"
     );
@@ -60,7 +62,7 @@ test("camera patch is installed before game classes are created, and native upda
 });
 
 test("distributed entry has no relative imports that break PML's blob cache", async () => {
-    const code = await readFile("0.1.6/main.mod.js", "utf8");
+    const code = await readFile(`${version}/main.mod.js`, "utf8");
     assert.doesNotMatch(code, /(?:import|export).*?from\s*["']\./);
     assert.match(code, /export\s*\{\s*polyMod\s*\}/);
 });
