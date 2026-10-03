@@ -58,7 +58,7 @@ export class UIController {
             <button class="timeline-load" data-action="timeline-load">Load timeline</button>
             <select class="bookmark" aria-label="Camera bookmarks"><option value="">Bookmarks</option></select>
             <div class="notice" role="status"></div>
-            <div class="small">F6 toggle · F7 cameras · F8 montage · F9 clean · F10 freecam<br>F11 hide/show window · Freecam: drag to look · wheel changes speed</div>`;
+            <div class="small">F6 toggle · F7 cameras · F8 montage · F9 clean · F10 freecam<br>F4 hide/show window · Freecam: drag to look · wheel changes speed</div>`;
         document.body.appendChild(root); this.root = root;
         root.classList.toggle("panel-hidden", this.hidden);
         root.addEventListener("click", (event) => {

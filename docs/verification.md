@@ -41,3 +41,5 @@ Replay playback, other mods, mobile/touch use, and later game versions are outsi
 Version 0.1.7 replaces the montage director and adjusts shot framing. It has been built successfully; the checks listed above describe v0.1.6, not a new game check of the montage changes.
 
 Version 0.1.8 adds the F11 window visibility shortcut and has been built successfully. The shortcut has not been checked in game.
+
+Version 0.1.9 moves window visibility to F4, using a new binding ID so PML ignores the previous shortcut's saved F11 assignment. The build succeeded; the shortcut has not been checked in game.
