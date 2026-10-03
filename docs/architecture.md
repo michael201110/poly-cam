@@ -12,6 +12,10 @@ This hook runs on the rendering side and writes only the selected car's camera t
 
 Vehicle forward in this release is **+Z**, while camera forward is **−Z**. Chase, front, mounts, fly-by placement, and freecam movement respect those conventions. Smoothing keeps its own position/quaternion/FOV state between updates because the game rewrites the native camera every frame. Poly-Cam rebuilds the projection after applying FOV, even when the cinematic FOV is steady.
 
+Follow rigs carry their smoothed camera and target by the actual car displacement each update before smoothing relative offsets. This removes speed-dependent world-position lag while retaining damping for framing changes. Position lag is bounded and rotation response increases with speed. Fixed pass rigs are excluded from this compensation and copy their captured position/target each frame, maintaining a constant view direction.
+
+The public `getCarState()` method also provides `wheelContact` entries with world-space `position` and `normal`, `steering`, and `frames`. Poly-Cam copies contact data to estimate the current road plane, observes contact loss/return for jump/landing cues, and observes frame resets to reset shot placement. No car state is written. Pass placement projects the current plane ahead; it does not raycast upcoming geometry.
+
 PolyTrack's spectator/free camera is a separate camera owned by the game controller. It bypasses the vehicle's `updateCameras` hook, so Poly-Cam currently works when PolyTrack is showing the car orbit/cockpit camera, not while the native spectator camera is selected.
 
 PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture dispatches that native toggle on entry and exit, and separately hides the Poly-Cam panel and cursor. It does not delete or replace game UI nodes. The restore action is F9.
@@ -21,7 +25,8 @@ PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture di
 - `src/main.mod.js`: PML lifecycle and version-specific camera hooks.
 - `PolyCam`: transforms, transitions, director, bookmarks and timeline state.
 - `shot-director.js`: filtered motion cues, weighted shot selection, pacing, framing variants and fresh roadside anchors. Uses per-car presentation data and the camera clock.
-- `rigs.js`: shared `CameraRig` contract and ten camera compositions.
+- `pass-shots.js`: copies public wheel contacts, predicts fixed pass positions and measures pass progress.
+- `rigs.js`: shared `CameraRig` contract and twelve camera compositions.
 - `input.js`: hotkeys and freecam key isolation.
 - `ui.js`: panel, clean capture, mode and timeline controls.
 

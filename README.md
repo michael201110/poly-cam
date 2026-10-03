@@ -4,21 +4,23 @@ Poly-Cam is a standalone PolyModLoader plugin for cinematic PolyTrack capture. I
 
 ## Status
 
-The first release targets PolyTrack 0.6.3. It establishes the camera hook and implements cinematic chase, low chase, front chase, side tracking, orbit, drone, trackside, fly-by, vehicle mount, and freecam rigs. It includes shot transitions, an event-weighted montage director, bookmarks, hotkeys, and a compact panel. Replay cars use the same vehicle camera hook as live cars.
+Poly-Cam targets PolyTrack 0.6.3 and provides twelve rigs: cinematic chase, low chase, front chase, side tracking, orbit, drone, trackside, panning fly-by, vehicle mount, freecam, fixed flash fly-by, and drive-over. It includes shot transitions, a montage director, bookmarks, hotkeys, and a compact panel. Replay cars use the same vehicle camera hook as live cars.
 
-Version 0.1.9 uses **F4** to completely hide/show the Poly-Cam window for OBS, including when minimized, freeing F11 for browser fullscreen. Version 0.1.7 improves Montage Mode with motion-aware shot selection, varied framing, fresh roadside placements, a level drone view, clean cuts, and three pacing choices. Version 0.1.6 fixed the startup hook and was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge; subsequent changes have been built but not checked in game. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
+Version 0.1.10 adds **Flash Fly-By** and **Drive-Over Cam**, raises Low Chase, and corrects follow-camera lag. Montage favors varied front, side, orbit, aerial and pass shots; rear chase appears at most once in four shots. **F4** hides the window for OBS and F11 remains available for fullscreen. Version 0.1.6 was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge; subsequent changes have been built but not checked in game. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
 
 ## Install
 
-**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.9`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.9)
+**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.10`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.10)
 
-Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.9` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
+Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.10` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
 
 Start a run, then click **OFF** in the panel to turn it **ON**, or press **F6**. Choose a mode from the dropdown. The status should read **Camera connected**. Click **−** to minimize and **+** to expand.
 
 Press **F4** to completely hide the window for OBS; press **F4** again to restore its previous minimized/expanded state. Camera and montage keep running. This shortcut controls the Poly-Cam window; F9 controls Clean Capture and the game HUD. F11 controls browser fullscreen.
 
 For automatic shots, click **Montage** or press **F8** and leave **Montage pace** on **Cinematic**. Choose a camera manually to pause the director.
+
+Select **Flash Fly-By** for a stationary view across the road as the car flashes past. **Drive-Over Cam** places a wide-angle camera at road level, looking up toward the approaching car. Both keep their direction fixed during a pass and prepare another position afterward. Drive-Over works best on a straight, level section.
 
 ## Controls
 

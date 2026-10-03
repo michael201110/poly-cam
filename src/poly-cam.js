@@ -3,8 +3,14 @@ import { MODES, createRigs } from "./rigs.js";
 import { InputController } from "./input.js";
 import { UIController } from "./ui.js";
 import { ShotDirector, MONTAGE_PACES } from "./shot-director.js";
+import { readRoadSurface } from "./pass-shots.js";
 
 const STORAGE_KEY = "poly-cam.v1";
+
+function translateFrame(value, x, y, z) {
+    if (!value) return;
+    value.x += x; value.y += y; value.z += z;
+}
 
 function runtimeState() {
     return {
@@ -20,6 +26,7 @@ function runtimeState() {
         output: { position: { x: 0, y: 0, z: 0 }, target: { x: 0, y: 0, z: 0 }, fov: 72, positionSharpness: 4, targetSharpness: 4, rotationSharpness: 5 },
         smoothPosition: { x: 0, y: 0, z: 0 }, smoothTarget: { x: 0, y: 0, z: 0 },
         directorState: null, montageShot: null,
+        surface: { position: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 1, z: 0 } },
         context: { position: null, quaternion: null, speed: 0, previousSpeed: 0, acceleration: 0, dt: 0 }
     };
 }
@@ -172,6 +179,12 @@ export class PolyCam {
         rt.lastUpdateAt = now;
         const context = rt.context;
         context.position = position; context.quaternion = quaternion; context.speed = speed; context.dt = step;
+        const carState = car.getCarState?.();
+        context.contactCount = readRoadSurface(carState, rt.surface);
+        context.surface = rt.surface;
+        context.steering = Number(carState?.steering) || 0;
+        const runReset = Number.isFinite(carState?.frames) && Number.isFinite(rt.lastCarFrame) && carState.frames < rt.lastCarFrame;
+        rt.lastCarFrame = carState?.frames;
 
         if (!rt.initialized) {
             rt.initialized = true;
@@ -186,7 +199,10 @@ export class PolyCam {
         }
 
         const carDx = position.x - rt.previousPosition.x, carDy = position.y - rt.previousPosition.y, carDz = position.z - rt.previousPosition.z;
-        if (rt.activationSerial !== this.activationSerial || carDx * carDx + carDy * carDy + carDz * carDz > 400) {
+        let rebased = false;
+        const resetDistance = Math.max(20, speed / 3.6 * step * 4);
+        if (runReset || rt.activationSerial !== this.activationSerial || carDx * carDx + carDy * carDy + carDz * carDz > resetDistance * resetDistance) {
+            rebased = true;
             const reactivated = rt.activationSerial !== this.activationSerial;
             rt.smoothPosition.x = camera.position.x; rt.smoothPosition.y = camera.position.y; rt.smoothPosition.z = camera.position.z;
             rt.smoothTarget.x = position.x; rt.smoothTarget.y = position.y; rt.smoothTarget.z = position.z;
@@ -195,6 +211,7 @@ export class PolyCam {
             rt.priorQuaternion.copy(camera.quaternion);
             rt.currentFov = camera.fov;
             rt.directorState = null; rt.montageShot = null;
+            rt.passPlacement = null; rt.passElapsed = 0;
             rt.previousPosition.x = position.x; rt.previousPosition.y = position.y; rt.previousPosition.z = position.z;
             rt.previousQuaternion.copy(quaternion); rt.previousSpeed = speed;
             if (reactivated && this.mode === "Freecam") {
@@ -234,11 +251,21 @@ export class PolyCam {
         if (this.montage && !this.timelineState.playing) this.directMontage(rt, context);
         else rt.montageShot = null;
 
+        const rig = this.rigs[this.modeIndex];
+        // Carry the smoothed frame by the car's actual displacement. Damping
+        // then applies to relative framing, so speed cannot accumulate a gap.
+        if (!rebased && rt.followedVehicle && rig.followsVehicle) {
+            translateFrame(rt.smoothPosition, carDx, carDy, carDz);
+            translateFrame(rt.smoothTarget, carDx, carDy, carDz);
+            translateFrame(rt.renderPosition, carDx, carDy, carDz);
+            if (rt.transition) { rt.transition.fromX += carDx; rt.transition.fromY += carDy; rt.transition.fromZ += carDz; }
+        }
+
         if (rt.lastMode !== this.modeIndex || rt.shotChanged) {
             const from = rt.renderPosition || camera.position;
             const dx = from.x - rt.smoothPosition.x, dy = from.y - rt.smoothPosition.y, dz = from.z - rt.smoothPosition.z;
             const transition = rt.montageShot?.transition || this.transitionMode;
-            rt.transition = transition === "BLEND" && dx * dx + dy * dy + dz * dz <= 2500
+            rt.transition = !rig.locked && transition === "BLEND" && dx * dx + dy * dy + dz * dz <= 2500
                 ? { fromX: from.x, fromY: from.y, fromZ: from.z, elapsed: 0 }
                 : null;
             if (!rt.transition) {
@@ -247,6 +274,7 @@ export class PolyCam {
             }
             rt.lastMode = this.modeIndex;
             rt.flybyAnchor = null;
+            rt.passPlacement = null; rt.passElapsed = 0;
             if (this.mode === "Freecam" && !restoringBookmark) {
                 rt.freePosition.x = from.x; rt.freePosition.y = from.y; rt.freePosition.z = from.z;
                 camera.rotation.setFromQuaternion(rt.priorQuaternion, "YXZ");
@@ -254,11 +282,13 @@ export class PolyCam {
             }
         }
 
-        const rig = this.rigs[this.modeIndex];
         if (this.mode === "Freecam") this.input.stepFreecam(rt, step);
         const out = rig.compose(context, rt, rt.output);
+        if (rt.transition && Math.hypot(out.position.x - rt.transition.fromX, out.position.y - rt.transition.fromY, out.position.z - rt.transition.fromZ) > 25) {
+            rt.transition = null; rt.cutPending = true;
+        }
         const cutCamera = rt.cutPending;
-        if (rt.cutPending) {
+        if (rt.cutPending || rig.locked) {
             rt.smoothPosition.x = out.position.x; rt.smoothPosition.y = out.position.y; rt.smoothPosition.z = out.position.z;
             rt.smoothTarget.x = out.target.x; rt.smoothTarget.y = out.target.y; rt.smoothTarget.z = out.target.z;
             rt.cutPending = false;
@@ -274,6 +304,16 @@ export class PolyCam {
         rt.smoothTarget.x += (out.target.x - rt.smoothTarget.x) * alphaTarget;
         rt.smoothTarget.y += (out.target.y - rt.smoothTarget.y) * alphaTarget;
         rt.smoothTarget.z += (out.target.z - rt.smoothTarget.z) * alphaTarget;
+        if (rig.followsVehicle) {
+            const dx = rt.smoothPosition.x - out.position.x, dy = rt.smoothPosition.y - out.position.y, dz = rt.smoothPosition.z - out.position.z;
+            const error = Math.hypot(dx, dy, dz);
+            const maximum = this.modeIndex === 8 ? 1 : this.modeIndex === 5 ? 4 : 3;
+            if (error > maximum) {
+                rt.smoothPosition.x = out.position.x + dx * maximum / error;
+                rt.smoothPosition.y = out.position.y + dy * maximum / error;
+                rt.smoothPosition.z = out.position.z + dz * maximum / error;
+            }
+        }
         if (!finiteVector(rt.smoothPosition) || !finiteVector(rt.smoothTarget)) return;
 
         if (rt.transition) {
@@ -285,12 +325,13 @@ export class PolyCam {
 
         camera.lookAt(rt.smoothTarget.x, rt.smoothTarget.y, rt.smoothTarget.z);
         rt.goalQuaternion.copy(camera.quaternion);
-        const alphaRot = 1 - Math.exp(-out.rotationSharpness * step);
-        if (cutCamera) rt.priorQuaternion.copy(rt.goalQuaternion);
+        const rotationSharpness = rig.followsVehicle ? Math.max(out.rotationSharpness, 10 + clamp(speed / 60, 0, 5)) : out.rotationSharpness;
+        const alphaRot = 1 - Math.exp(-rotationSharpness * step);
+        if (cutCamera || rig.locked) rt.priorQuaternion.copy(rt.goalQuaternion);
         else rt.priorQuaternion.slerp(rt.goalQuaternion, alphaRot);
         camera.quaternion.copy(rt.priorQuaternion);
         const fov = clamp(out.fov, 25, 110);
-        rt.currentFov = cutCamera ? fov : rt.currentFov + (fov - rt.currentFov) * (1 - Math.exp(-2.5 * step));
+        rt.currentFov = cutCamera || rig.locked ? fov : rt.currentFov + (fov - rt.currentFov) * (1 - Math.exp(-2.5 * step));
         camera.fov = rt.currentFov;
         // The native update rebuilt its projection before this hook. Rebuild ours
         // even when our smoothed FOV is unchanged from the preceding frame.
@@ -309,6 +350,7 @@ export class PolyCam {
             cockpit.updateMatrix();
         }
         rt.previousQuaternion.copy(quaternion);
+        rt.followedVehicle = rig.followsVehicle;
         rt.previousPosition.x = position.x; rt.previousPosition.y = position.y; rt.previousPosition.z = position.z;
         this.ui.lastCamera = camera;
         this.ui.activeRuntime = rt;

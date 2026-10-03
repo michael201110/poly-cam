@@ -1,27 +1,29 @@
 import { clamp, localPoint } from "./math.js";
+import { createPassPlacement, passProgress } from "./pass-shots.js";
 
 export const MODES = [
     "Cinematic Chase", "Low Chase", "Front Chase", "Side Tracking", "Orbit Cam",
-    "Drone Cam", "Trackside Cam", "Fly-By Cam", "Vehicle Mount", "Freecam"
+    "Drone Cam", "Trackside Cam", "Fly-By Cam", "Vehicle Mount", "Freecam",
+    "Flash Fly-By", "Drive-Over Cam"
 ];
 
 const point = (x = 0, y = 0, z = 0) => ({ x, y, z });
 
 export class CameraRig {
-    constructor(name) { this.name = name; }
+    constructor(name, followsVehicle = false) { this.name = name; this.followsVehicle = followsVehicle; }
     compose(context, runtime, out) { return out; }
 }
 
 export class ChaseRig extends CameraRig {
-    constructor(low = false) { super(low ? "Low Chase" : "Cinematic Chase"); this.low = low; }
+    constructor(low = false) { super(low ? "Low Chase" : "Cinematic Chase", true); this.low = low; }
     compose({ position, quaternion, speed }, runtime, out) {
         const speedScale = clamp(speed / 220, 0, 1);
         const shot = runtime.montageShot;
-        const distance = shot?.distance ?? (this.low ? 7 + speedScale * 1.3 : 8.5);
-        const height = shot?.height ?? (this.low ? 0.85 : 2.15);
+        const distance = shot?.distance ?? (this.low ? 6.5 + speedScale * 0.6 : 8.5);
+        const height = shot?.height ?? (this.low ? 1.55 : 2.15);
         localPoint(out.position, position, quaternion, shot?.lateral ?? (this.low ? 0.18 : 0.25), height, -distance);
-        localPoint(out.target, position, quaternion, 0, this.low ? 0.55 : 1.1, (shot?.lookAhead ?? 3.4) + speedScale * 2.5);
-        out.fov = runtime.fov + (this.low ? 7 : 0) + Math.min(5, speedScale * 4);
+        localPoint(out.target, position, quaternion, 0, this.low ? 0.85 : 1.1, (shot?.lookAhead ?? 3.4) + speedScale * 2.5);
+        out.fov = runtime.fov + (this.low ? 3 : 0) + Math.min(5, speedScale * 4);
         out.positionSharpness = this.low ? 5.5 : 3.4;
         out.targetSharpness = 6;
         out.rotationSharpness = 7;
@@ -30,7 +32,7 @@ export class ChaseRig extends CameraRig {
 }
 
 export class FrontChaseRig extends CameraRig {
-    constructor() { super("Front Chase"); }
+    constructor() { super("Front Chase", true); }
     compose({ position, quaternion }, runtime, out) {
         localPoint(out.position, position, quaternion, 0, runtime.montageShot?.height ?? 2.2, runtime.montageShot?.distance ?? 9);
         localPoint(out.target, position, quaternion, 0, 1, -0.4);
@@ -40,7 +42,7 @@ export class FrontChaseRig extends CameraRig {
 }
 
 export class SideTrackingRig extends CameraRig {
-    constructor() { super("Side Tracking"); }
+    constructor() { super("Side Tracking", true); }
     compose({ position, quaternion }, runtime, out) {
         const shot = runtime.montageShot;
         localPoint(out.position, position, quaternion, runtime.side * (shot?.distance ?? 8), shot?.height ?? 2.2, shot?.longitudinal ?? runtime.longitudinal);
@@ -51,7 +53,7 @@ export class SideTrackingRig extends CameraRig {
 }
 
 export class OrbitRig extends CameraRig {
-    constructor() { super("Orbit Cam"); }
+    constructor() { super("Orbit Cam", true); }
     compose({ position, quaternion, dt }, runtime, out) {
         const shot = runtime.montageShot;
         runtime.orbitAngle += dt * (shot?.orbitSpeed ?? runtime.orbitSpeed) * (shot?.side ?? runtime.orbitDirection);
@@ -65,7 +67,7 @@ export class OrbitRig extends CameraRig {
 }
 
 export class DroneRig extends CameraRig {
-    constructor() { super("Drone Cam"); }
+    constructor() { super("Drone Cam", true); }
     compose({ position, quaternion }, runtime, out) {
         const shot = runtime.montageShot;
         // Keep altitude in world space so jumps and banking do not roll the drone
@@ -125,7 +127,7 @@ export class FlyByRig extends CameraRig {
 }
 
 export class VehicleMountRig extends CameraRig {
-    constructor() { super("Vehicle Mount"); }
+    constructor() { super("Vehicle Mount", true); }
     compose({ position, quaternion }, runtime, out) {
         const mounts = {
             "Front bumper": [0, 0.55, 2.3], "Rear bumper": [0, 0.65, -2.2],
@@ -158,8 +160,35 @@ export class FreecamRig extends CameraRig {
     }
 }
 
+export class FixedPassRig extends CameraRig {
+    constructor(driveOver = false) {
+        super(driveOver ? "Drive-Over Cam" : "Flash Fly-By");
+        this.mode = driveOver ? 11 : 10;
+        this.locked = true;
+    }
+    compose(context, runtime, out) {
+        const directed = runtime.montageShot?.mode === this.mode && runtime.montageShot.anchor;
+        let placement = directed ? runtime.montageShot : runtime.passPlacement;
+        if (!directed) {
+            runtime.passElapsed = (runtime.passElapsed || 0) + context.dt;
+            const progress = placement?.mode === this.mode ? passProgress(placement, context.position) : null;
+            const passed = progress && progress.remaining < -Math.max(5, context.speed / 3.6 * 0.35);
+            const missed = progress && Math.abs(progress.lateral) > (this.mode === 11 ? 2 : 15) && runtime.passElapsed > 2.5;
+            if (!progress || (context.speed > 25 && (passed || missed || runtime.passElapsed > 6))) {
+                placement = createPassPlacement(context, runtime, this.mode, { side: runtime.side, lead: this.mode === 11 ? 0.8 : 1.05 });
+                runtime.passPlacement = placement; runtime.passElapsed = 0;
+            }
+        }
+        Object.assign(out.position, placement.anchor);
+        Object.assign(out.target, placement.lookTarget);
+        out.fov = this.mode === 11 ? clamp(runtime.fov + 32, 90, 110) : runtime.fov;
+        out.positionSharpness = out.targetSharpness = out.rotationSharpness = 100;
+        return out;
+    }
+}
+
 export const createRigs = () => [
     new ChaseRig(), new ChaseRig(true), new FrontChaseRig(), new SideTrackingRig(),
     new OrbitRig(), new DroneRig(), new TracksideRig(), new FlyByRig(),
-    new VehicleMountRig(), new FreecamRig()
+    new VehicleMountRig(), new FreecamRig(), new FixedPassRig(), new FixedPassRig(true)
 ];
