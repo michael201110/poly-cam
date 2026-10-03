@@ -6,15 +6,17 @@ Poly-Cam is a standalone PolyModLoader plugin for cinematic PolyTrack capture. I
 
 The first release targets PolyTrack 0.6.3. It establishes the camera hook and implements cinematic chase, low chase, front chase, side tracking, orbit, drone, trackside, fly-by, vehicle mount, and freecam rigs. It includes shot transitions, an event-weighted montage director, bookmarks, hotkeys, and a compact panel. Replay cars use the same vehicle camera hook as live cars.
 
-Version 0.1.7 improves Montage Mode with motion-aware shot selection, varied framing, fresh roadside placements, a level drone view, clean cuts, and three pacing choices. Version 0.1.6 fixed the startup hook and was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge; the 0.1.7 montage changes have been built but not checked in game. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
+Version 0.1.8 adds **F11** to completely hide/show the Poly-Cam window for OBS, including when minimized. Version 0.1.7 improves Montage Mode with motion-aware shot selection, varied framing, fresh roadside placements, a level drone view, clean cuts, and three pacing choices. Version 0.1.6 fixed the startup hook and was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge; subsequent changes have been built but not checked in game. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
 
 ## Install
 
-**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.7`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.7)
+**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.8`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.8)
 
-Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.7` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
+Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.8` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
 
 Start a run, then click **OFF** in the panel to turn it **ON**, or press **F6**. Choose a mode from the dropdown. The status should read **Camera connected**. Click **−** to minimize and **+** to expand.
+
+Press **F11** to completely hide the window for OBS; press **F11** again to restore its previous minimized/expanded state. Camera and montage keep running. This shortcut controls the Poly-Cam window; F9 controls Clean Capture and the game HUD.
 
 For automatic shots, click **Montage** or press **F8** and leave **Montage pace** on **Cinematic**. Choose a camera manually to pause the director.
 
@@ -28,6 +30,7 @@ For automatic shots, click **Montage** or press **F8** and leave **Montage pace*
 | F8 | Toggle Montage Mode |
 | F9 | Toggle Clean Capture (emergency restore) |
 | F10 | Enter or leave freecam |
+| F11 | Completely hide/show the Poly-Cam window for OBS |
 | WASD | Move in freecam |
 | Space / Ctrl | Move up / down in freecam |
 | Shift / Alt | Fast / precise freecam movement |

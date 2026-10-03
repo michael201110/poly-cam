@@ -39,3 +39,5 @@ For v0.1.6, the game checks passed for:
 Replay playback, other mods, mobile/touch use, and later game versions are outside this automated check.
 
 Version 0.1.7 replaces the montage director and adjusts shot framing. It has been built successfully; the checks listed above describe v0.1.6, not a new game check of the montage changes.
+
+Version 0.1.8 adds the F11 window visibility shortcut and has been built successfully. The shortcut has not been checked in game.

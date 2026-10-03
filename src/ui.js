@@ -20,12 +20,14 @@ const STYLE = `
 #poly-cam-panel .timeline{width:100%;resize:vertical;min-height:58px}#poly-cam-panel .timeline-load,#poly-cam-panel .bookmark{width:100%;margin:5px 0}
 #poly-cam-panel .small{opacity:.75;font-size:10px}#poly-cam-panel .notice{color:#8fdaff;min-height:15px;letter-spacing:0}
 #poly-cam-panel.collapsed{width:auto;padding:9px 12px}#poly-cam-panel.collapsed header{margin:0}#poly-cam-panel.collapsed>*:not(header){display:none!important}
+#poly-cam-panel.panel-hidden{display:none!important}
 body.poly-cam-clean #poly-cam-panel{display:none}`;
 
 export class UIController {
     constructor(owner) {
         this.owner = owner; this.root = null; this.style = null; this.lastCamera = null; this.activeRuntime = null;
         this.notice = ""; this.hookStatus = "Waiting for a run"; this.nativeHudHidden = false; this.collapsed = false;
+        this.hidden = false;
     }
     mount() {
         if (this.root || !document.body) return;
@@ -56,8 +58,9 @@ export class UIController {
             <button class="timeline-load" data-action="timeline-load">Load timeline</button>
             <select class="bookmark" aria-label="Camera bookmarks"><option value="">Bookmarks</option></select>
             <div class="notice" role="status"></div>
-            <div class="small">F6 toggle · F7 cameras · F8 montage · F9 clean · F10 freecam<br>Freecam: drag mouse to look · wheel changes speed</div>`;
+            <div class="small">F6 toggle · F7 cameras · F8 montage · F9 clean · F10 freecam<br>F11 hide/show window · Freecam: drag to look · wheel changes speed</div>`;
         document.body.appendChild(root); this.root = root;
+        root.classList.toggle("panel-hidden", this.hidden);
         root.addEventListener("click", (event) => {
             event.stopPropagation();
             const action = event.target.closest("button[data-action]")?.dataset.action;
@@ -102,6 +105,11 @@ export class UIController {
         button.title = this.collapsed ? "Expand" : "Minimize";
         button.setAttribute("aria-label", this.collapsed ? "Expand Poly-Cam" : "Minimize Poly-Cam");
         button.setAttribute("aria-expanded", String(!this.collapsed));
+    }
+    toggleHidden() {
+        this.hidden = !this.hidden;
+        if (this.hidden && this.root?.contains(document.activeElement)) document.activeElement.blur();
+        this.root?.classList.toggle("panel-hidden", this.hidden);
     }
     refresh() {
         if (!this.root) return;

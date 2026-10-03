@@ -16,9 +16,10 @@ export class InputController {
     initialize(pml) {
         pml.registerBindCategory("Poly-Cam");
         const bind = (name, id, key, callback) => pml.registerKeybind(name, id, "keydown", key, null, (event) => {
-            if (event.repeat || (event.target?.closest?.("input, select, textarea, [contenteditable=true]") && !/^F\d+$/.test(event.code))) return;
+            if (event.target?.closest?.("input, select, textarea, [contenteditable=true]") && !/^F\d+$/.test(event.code)) return;
             event.preventDefault();
             event.stopPropagation();
+            if (event.repeat) return;
             callback(event);
         });
         bind("Toggle Poly-Cam", "polyCamToggle", "F6", () => this.owner.toggleEnabled());
@@ -26,6 +27,7 @@ export class InputController {
         bind("Montage Mode", "polyCamMontage", "F8", () => this.owner.toggleMontage());
         bind("Clean Capture", "polyCamClean", "F9", () => this.owner.toggleCleanCapture());
         bind("Freecam", "polyCamFreecam", "F10", () => this.toggleFreecam());
+        bind("Hide/show Poly-Cam window", "polyCamWindow", "F11", () => this.owner.ui.toggleHidden());
         window.addEventListener("keydown", this.onKeyDown, true);
         window.addEventListener("keyup", this.onKeyUp, true);
         window.addEventListener("mousemove", this.onMouseMove, true);
