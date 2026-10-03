@@ -34,7 +34,7 @@ export class ChaseRig extends CameraRig {
 export class FrontChaseRig extends CameraRig {
     constructor() { super("Front Chase", true); }
     compose({ position, quaternion }, runtime, out) {
-        localPoint(out.position, position, quaternion, 0, runtime.montageShot?.height ?? 2.2, runtime.montageShot?.distance ?? 9);
+        localPoint(out.position, position, quaternion, runtime.montageShot?.lateral ?? 0, runtime.montageShot?.height ?? 2.2, runtime.montageShot?.distance ?? 9);
         localPoint(out.target, position, quaternion, 0, 1, -0.4);
         out.fov = runtime.fov; out.positionSharpness = 3; out.targetSharpness = 7; out.rotationSharpness = 7;
         return out;
@@ -56,9 +56,10 @@ export class OrbitRig extends CameraRig {
     constructor() { super("Orbit Cam", true); }
     compose({ position, quaternion, dt }, runtime, out) {
         const shot = runtime.montageShot;
-        runtime.orbitAngle += dt * (shot?.orbitSpeed ?? runtime.orbitSpeed) * (shot?.side ?? runtime.orbitDirection);
-        const x = Math.sin(runtime.orbitAngle) * (shot?.radius ?? runtime.orbitRadius);
-        const z = Math.cos(runtime.orbitAngle) * (shot?.radius ?? runtime.orbitRadius);
+        if (!shot) runtime.orbitAngle += dt * runtime.orbitSpeed * runtime.orbitDirection;
+        const angle = shot?.angle ?? runtime.orbitAngle;
+        const x = Math.sin(angle) * (shot?.radius ?? runtime.orbitRadius);
+        const z = Math.cos(angle) * (shot?.radius ?? runtime.orbitRadius);
         localPoint(out.position, position, quaternion, x, shot?.height ?? runtime.orbitHeight, z);
         localPoint(out.target, position, quaternion, 0, 1, 0);
         out.fov = runtime.fov; out.positionSharpness = 2.3; out.targetSharpness = 4; out.rotationSharpness = 5;
@@ -75,10 +76,13 @@ export class DroneRig extends CameraRig {
         const forwardX = 2 * (quaternion.x * quaternion.z + quaternion.w * quaternion.y);
         const forwardZ = 1 - 2 * (quaternion.x * quaternion.x + quaternion.y * quaternion.y);
         const length = Math.hypot(forwardX, forwardZ);
+        const fx = length > 0.01 ? forwardX / length : 0;
+        const fz = length > 0.01 ? forwardZ / length : 1;
         const trail = shot?.trail ?? 5;
-        out.position.x = position.x - (length > 0.01 ? forwardX / length : 0) * trail;
+        const lateral = shot?.lateral ?? 0;
+        out.position.x = position.x - fx * trail + fz * lateral;
         out.position.y = position.y + (shot?.altitude ?? runtime.droneAltitude);
-        out.position.z = position.z - (length > 0.01 ? forwardZ / length : 1) * trail;
+        out.position.z = position.z - fz * trail - fx * lateral;
         localPoint(out.target, position, quaternion, 0, 0.9, 2);
         out.fov = runtime.fov; out.positionSharpness = 1.6; out.targetSharpness = 4.5; out.rotationSharpness = 4;
         return out;

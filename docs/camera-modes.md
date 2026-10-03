@@ -17,17 +17,22 @@ FOV is adjustable from the panel. The chase rigs add a small speed response. Fol
 
 ## Montage and timeline
 
-Montage Mode chooses framing from speed, filtered turn rate, steering, acceleration, and wheel contacts. It starts with a front, side, orbit, aerial or pass shot. Rear chase appears at most once in every four shots, with shorter holds. Adjacent shots use different shot families; recent rigs get lower selection weights.
+Montage Mode chooses framing from speed, filtered turn rate, steering, acceleration, and wheel contacts. Moving shots follow a continuous camera path throughout their duration. It starts with a front, side, orbit, aerial or pass shot. Rear chase appears at most once in every four shots, with shorter holds. Adjacent shots use different shot families, the director favors contrast between wide and close views, and recent rigs get lower selection weights. Pass shots require two intervening shots before another pass can be selected.
 
 - **Corners:** mixes side, front, orbit and elevated drone views, placing side cameras outside the turn.
 - **Straights:** mixes fresh trackside, panning fly-by, flash fly-by and drive-over shots with front, side, orbit, drone and occasional mount details. Drive-over selection requires at least three wheel contacts and a near-level, straight path.
 - **Roadside passes:** creates a fresh world-space anchor ahead of the car using its movement direction, speed and current contact plane. Cuts shortly after the pass rather than holding a distant car. If a drive-over path is missed, the director changes shots.
-- **Orbits and drones:** orbit shots begin near the front/side and sweep through a broader arc. Drone framing stays closer to the car.
-- **Shot variations:** changes distance, height, side, mount, and FOV within a rig. Lower FOV gives trackside shots a longer-lens feel. The panel's FOV remains the base setting; montage applies an offset for each shot.
+- **Side tracking:** travels from the rear quarter to the front quarter, or back again, while rising or descending alongside the car.
+- **Front shots:** push toward the car or pull away, with a diagonal move and a gradual lens change.
+- **Orbits:** sweep roughly 110–150 degrees around the car, changing radius and rising from a low view to a high view, or descending in reverse.
+- **Drones:** cross overhead from one side to the other, or descend from a wide overhead reveal into a closer front view. Altitude remains in world space.
+- **Rear shots:** move diagonally inward from a rear quarter; Low Chase stays above its raised minimum height.
+- **Mount details:** brief inserts, around one second at Cinematic pace, rather than several seconds of static framing.
+- **Shot variations:** changes direction of travel, height, side, mount, and FOV. Lens changes run through the moving shot. Lower FOV gives trackside shots a longer-lens feel. The panel's FOV remains the base setting; montage applies an offset for each shot.
 - **Transitions:** uses clean cuts between distant viewpoints and blends between compatible chase views. Your manual transition setting is retained for manual cameras and timelines.
 - **Drone:** holds altitude above the car in world space with a level horizon, including during banking or a rollover.
 
-Use **Montage pace** to choose **Cinematic** (default: roughly 4–7 seconds for moving shots, at least 2.8 seconds), **Balanced** (roughly 3–5 seconds, at least 2.1 seconds), or **Energetic** (roughly 2.5–4 seconds, at least 1.4 seconds). Idle shots hold longer; rear chase and mount details are shorter. Pass shots use their own shorter timing to show the approach and the car going past, then cut away. A missed pass or rollover may trigger a recovery cut. Manually selecting a camera or pressing F7 pauses montage; F8 starts it again. Pace is saved between sessions.
+Use **Montage pace** to choose **Cinematic** (default: roughly 3–4.5 seconds for moving shots, action cuts after 1.8 seconds), **Balanced** (roughly 2.3–3.5 seconds, action cuts after 1.35 seconds), or **Energetic** (roughly 1.7–2.5 seconds, action cuts after 0.9 seconds). Idle shots hold slightly longer; rear chase and mount details are shorter. Pass shots use their own shorter timing to show the approach and the car going past, then cut away. Jumps and landings can trigger an earlier action cut after 0.65 seconds. A missed pass or rollover may trigger a recovery cut. Manually selecting a camera or pressing F7 pauses montage; F8 starts it again. Pace is saved between sessions.
 
 Shot choices use a persisted xorshift seed in `localStorage` key `poly-cam.v1`. `getCarState().wheelContact` supplies contact positions/normals and helps identify jumps/landings. Motion inference is used if that data is unavailable. Automatic placement projects the current contact plane ahead of the car; it does not inspect upcoming track geometry. Sharp changes of slope or direction can miss a fixed pass shot, so use a straight section for Drive-Over. Manually placed trackside cameras remain available for exact composition.
 

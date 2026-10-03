@@ -45,3 +45,5 @@ Version 0.1.8 adds the F11 window visibility shortcut and has been built success
 Version 0.1.9 moves window visibility to F4, using a new binding ID so PML ignores the previous shortcut's saved F11 assignment. The build succeeded; the shortcut has not been checked in game.
 
 Version 0.1.10 adds two fixed pass modes, changes follow smoothing to compensate for vehicle movement, raises Low Chase, and limits rear chase use in montage. The build succeeded; these changes have not been checked in game. The original ten mode indices are preserved, with the two new modes appended.
+
+Version 0.1.11 adds continuous movement within montage shots, shorter pacing, wide/close contrast, shorter mount inserts, and earlier reactions to jumps/landings. The build succeeded; these changes have not been checked in game. Manual camera modes and their indices remain unchanged.

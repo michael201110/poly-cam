@@ -284,6 +284,12 @@ export class PolyCam {
 
         if (this.mode === "Freecam") this.input.stepFreecam(rt, step);
         const out = rig.compose(context, rt, rt.output);
+        if (rt.montageShot && rig.followsVehicle) {
+            // Follow the planned dolly/crane path without damping away its travel.
+            out.positionSharpness = Math.max(out.positionSharpness, 7);
+            out.targetSharpness = Math.max(out.targetSharpness, 10);
+            out.rotationSharpness = Math.max(out.rotationSharpness, 16);
+        }
         if (rt.transition && Math.hypot(out.position.x - rt.transition.fromX, out.position.y - rt.transition.fromY, out.position.z - rt.transition.fromZ) > 25) {
             rt.transition = null; rt.cutPending = true;
         }
