@@ -4,9 +4,13 @@
 
 PolyTrack 0.6.3's `main.bundle.js` vehicle class owns both the orbit and cockpit cameras. The public methods `getPosition()`, `getQuaternion()`, and `getSpeedKmh()` provide the rendered car transform and speed. `cameraOrbit` returns the native Three.js perspective camera; its position, quaternion, FOV, `lookAt()`, and `updateProjectionMatrix()` are directly usable.
 
-The vehicle's `updateCameras(dt)` method updates both native cameras from the car transform. The render controller invokes `updateCameras` for its active car and replay cars, and its camera selection points at the chosen car's orbit camera. Poly-Cam reads this method from PML's live game function and derives the insertion token from its body, then inserts a callback after the native orbit/cockpit update. No private fields are read by Poly-Cam itself.
+The vehicle's `updateCameras(dt)` method updates both native cameras from the car transform. The render controller invokes `updateCameras` for its active car and replay cars, and its camera selection points at the chosen car's orbit/cockpit camera. Poly-Cam derives insertion tokens from the actual `updateCameras` and renderer `setCamera` method bodies in PML's game function. The first callback runs after the native camera update; the second records which camera the renderer selected. Only the selected car is composed, so replay ghosts do not advance the timeline or consume freecam input. No private fields are read by Poly-Cam itself.
 
-This hook is render-side. It runs after the game's own camera update and writes only the camera object's transform/FOV. It does not patch simulation worker code, inputs, physics, replay frames, or clocks. When disabled the callback does nothing, leaving the native update result intact. Every car camera receives a camera composition update; only the camera selected by PolyTrack is rendered. This is what lets the same rigs work for replay playback without finding replay internals.
+Both source patches must be registered in **preInit**. PML executes `globalFunc` between `preInit` and `init`; registering a global source mixin in `init` leaves the already-created classes unchanged. That was the cause of the earlier “Hook: waiting” failure. `init` creates the controller, registers hotkeys, and mounts the panel.
+
+This hook runs on the rendering side and writes only the selected car's camera transform/FOV. It does not patch simulation worker code, physics, replay frames, or clocks. Freecam intercepts its movement keys locally so camera navigation does not drive the vehicle. Disabling restores the last native camera snapshot immediately; subsequent native camera updates run normally. The same car API is used during replay playback.
+
+Vehicle forward in this release is **+Z**, while camera forward is **−Z**. Chase, front, mounts, fly-by placement, and freecam movement respect those conventions. Smoothing keeps its own position/quaternion/FOV state between updates because the game rewrites the native camera every frame. Poly-Cam rebuilds the projection after applying FOV, even when the cinematic FOV is steady.
 
 PolyTrack's spectator/free camera is a separate camera owned by the game controller. It bypasses the vehicle's `updateCameras` hook, so Poly-Cam currently works when PolyTrack is showing the car orbit/cockpit camera, not while the native spectator camera is selected.
 
@@ -14,11 +18,13 @@ PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture di
 
 ## Modules
 
-- `main.mod.js`: PML lifecycle and version-specific camera hook.
+- `src/main.mod.js`: PML lifecycle and version-specific camera hooks.
 - `PolyCam`: transforms, transitions, director, bookmarks and timeline state.
 - `rigs.js`: shared `CameraRig` contract and ten camera compositions.
 - `input.js`: hotkeys and freecam key isolation.
-- `ui.js`: cached panel nodes, clean capture, mode and timeline controls.
+- `ui.js`: panel, clean capture, mode and timeline controls.
+
+`npm run build` bundles `src/` into the current version folder and updates the manifests. Generated release files are committed for CDN distribution.
 
 ## Compatibility boundary
 
@@ -26,4 +32,4 @@ PolyTrack 0.6.3/PML 0.6.3 are the only declared target. The PML API exposes clas
 
 ## Performance
 
-Rig output, smoothing state, and quaternion scratch values are reused per vehicle. PolyTrack's public position/quaternion getters return fresh values, so the hook consumes those API allocations. No geometry searches or scene traversal occur per frame. FOV projection is recalculated only after the FOV changes.
+Rig output, smoothing state, and quaternion scratch values are reused per vehicle. PolyTrack's public position/quaternion getters return fresh values, so the hook consumes those API allocations. No geometry searches or scene traversal occur per frame. Both selected-car camera projections are rebuilt after Poly-Cam's FOV is applied.

@@ -3,7 +3,7 @@
 - **Cinematic Chase:** smooth trailing shot with speed-aware look-ahead and moderate FOV.
 - **Low Chase:** road-level trailing framing for speed and surface movement.
 - **Front Chase:** camera ahead of the vehicle looking back.
-- **Side Tracking:** lateral follow shot. Internal default is right side; adjust `runtime.side` / `runtime.longitudinal` in `rigs.js` for left/right and fore/aft placement.
+- **Side Tracking:** lateral follow shot. Click the panel's **Right / Left** button to switch sides.
 - **Orbit Cam:** slow orbit around the vehicle.
 - **Drone Cam:** elevated follow shot with slower position response.
 - **Trackside Cam:** fixed camera position, smooth pan to the car. First activation chooses a point near the car; enter freecam and choose **Place Trackside** to place it precisely.
@@ -23,4 +23,4 @@ The timeline is a JSON array with `time` (seconds) and `mode` (mode name or nume
 [{"time":0,"mode":"Trackside Cam"},{"time":2.2,"mode":"Low Chase"},{"time":4.8,"mode":"Drone Cam"}]
 ```
 
-Load, play, and reset it from the panel. Loop playback is available through `timelineState.loop`.
+Load, play, pause, and reset it from the panel. Use **Loop timeline** to repeat playback. Montage and timeline play enable Poly-Cam automatically.

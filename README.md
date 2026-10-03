@@ -6,13 +6,15 @@ Poly-Cam is a standalone PolyModLoader plugin for cinematic PolyTrack capture. I
 
 The first release targets PolyTrack 0.6.3. It establishes the camera hook and implements cinematic chase, low chase, front chase, side tracking, orbit, drone, trackside, fly-by, vehicle mount, and freecam rigs. It includes shot transitions, an event-weighted montage director, bookmarks, hotkeys, and a compact panel. Replay cars use the same vehicle camera hook as live cars.
 
-PolyTrack/PML bundles change over time. The current integration is version-scoped and documented in [architecture notes](docs/architecture.md). Runtime validation in the game is still needed for replay selection, run lifecycle, and coexistence with other mods.
+Version 0.1.6 fixes the startup hook that left earlier releases showing “Hook: waiting.” It also fixes camera direction, FOV, transitions, freecam movement, the side button, and minimize/restore. The release was exercised against the actual PolyTrack/PML 0.6.3 bundle in headless Edge. See [verification and development](docs/verification.md) and [architecture notes](docs/architecture.md).
 
 ## Install
 
-**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.5`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.5)
+**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.6`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/v0.1.6)
 
-Copy that URL into PolyModLoader's **Add mod** URL field. This points at the `v0.1.5` release branch and works for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
+Remove the earlier Poly-Cam entry, then copy that URL into PolyModLoader's **Add mod** URL field and relaunch the game. This points at the `v0.1.6` release branch for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
+
+Start a run, then click **OFF** in the panel to turn it **ON**, or press **F6**. Choose a mode from the dropdown. The status should read **Camera connected**. Click **−** to minimize and **+** to expand.
 
 ## Controls
 
@@ -27,7 +29,7 @@ Copy that URL into PolyModLoader's **Add mod** URL field. This points at the `v0
 | WASD | Move in freecam |
 | Space / Ctrl | Move up / down in freecam |
 | Shift / Alt | Fast / precise freecam movement |
-| Mouse | Look while freecam is active |
+| Mouse drag | Look while freecam is active |
 | Wheel | Change freecam speed |
 | Escape | Leave freecam and restore the cursor |
 
@@ -40,7 +42,7 @@ The panel includes controls for mode selection, FOV, trackside placement, bookma
 - PolyTrack's separate spectator/free camera bypasses the vehicle camera hook; switch back to the car orbit/cockpit camera before enabling Poly-Cam.
 - Trackside placement is world-space and can be composed with freecam; Poly-Cam does not search track geometry.
 - Clean Capture hides Poly-Cam's panel and cursor, and uses PolyTrack 0.6.3's native H UI toggle. F9 toggles the HUD back on. It does not permanently remove game UI.
-- The plugin has not been runtime-tested inside PolyTrack in this workspace.
+- Automated game checks cover startup, all ten rigs, panel controls, native camera restore and track changes. Replay playback and coexistence with other mods still need separate checks.
 
 ## License
 
