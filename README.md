@@ -10,7 +10,7 @@ PolyTrack/PML bundles change over time. The current integration is version-scope
 
 ## Install
 
-**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/main`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/main)
+**PolyModLoader import URL:** [`https://cdn.polymodloader.com/gh/michael201110/poly-cam/stable`](https://cdn.polymodloader.com/gh/michael201110/poly-cam/stable)
 
 Copy that URL into PolyModLoader's **Add mod** URL field. This points at the `main` branch and works for PolyTrack 0.6.3. See [full installation instructions](docs/installation.md).
 

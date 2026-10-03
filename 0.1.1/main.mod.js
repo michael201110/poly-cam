@@ -1,7 +1,7 @@
 import { PolyMod, MixinType } from "https://cdn.polymodloader.com/cb/polytrackmods/PolyModLoader/0.6.3/PolyTypes.js";
 // PML may reload this entry module from a blob URL when using its cache.
 // Keep this import absolute so it resolves both from the CDN and from a blob.
-import { PolyCam } from "https://cdn.polymodloader.com/gh/michael201110/poly-cam/main/0.1.1/src/poly-cam.js";
+import { PolyCam } from "https://cdn.polymodloader.com/gh/michael201110/poly-cam/stable/0.1.1/src/poly-cam.js";
 
 class PolyCamMod extends PolyMod {
     init = (pml) => {
