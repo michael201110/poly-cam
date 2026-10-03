@@ -2,8 +2,10 @@
 
 Poly-Cam follows the post-0.6.0 PolyModLoader repository layout: root `manifest.json` and `latest.json`, then a semver version folder containing `version.json` and the mod entrypoint.
 
+**Import URL:** `https://cdn.polymodloader.com/gh/michael201110/poly-cam/main`
+
 1. Install PolyModLoader for PolyTrack 0.6.3.
-2. Add this repository as a PolyModLoader mod source, using the repository root.
+2. Copy the import URL above into PolyModLoader's **Add mod** URL field.
 3. Select Poly-Cam in the PML mod list and launch PolyTrack.
 4. In a run or replay, use F6 to enable the cinematic camera and F7 to cycle rigs.
 
