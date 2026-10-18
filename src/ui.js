@@ -1,27 +1,67 @@
 import { MODES } from "./rigs.js";
 import { MONTAGE_PACES } from "./shot-director.js";
+import { attachPolyCaptureUI } from "./capture-ui.js";
 
 const STYLE = `
-#poly-cam-panel{position:fixed;z-index:2147483000;top:12px;right:12px;width:min(292px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:14px;color:#f4f7fa;background:rgba(10,16,22,.94);border:1px solid #ffffff30;border-radius:10px;font:12px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px #0008}
-#poly-cam-panel *{box-sizing:border-box;font-family:inherit}
-#poly-cam-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;letter-spacing:.1em;margin-bottom:8px}
+/* Same glass tokens as PolyBot's in-game HUD; no runtime mod dependency. */
+#poly-cam-panel{
+ --poly-tools-top:12px;--poly-glass-fg:#f1f7fc;--poly-glass-muted:#c9d6e1;
+ position:fixed;z-index:2147483000;top:var(--poly-tools-top);right:12px;
+ width:min(292px,calc(100vw - 24px));max-height:calc(100dvh - var(--poly-tools-top) - 12px);
+ overflow:auto;overscroll-behavior:contain;padding:14px 16px;box-sizing:border-box;
+ color:var(--poly-glass-fg);background:linear-gradient(135deg,rgba(230,247,255,.14),rgba(40,70,105,.08)),rgba(9,19,32,.26);
+ border:1px solid rgba(235,248,255,.3);border-radius:20px;font:12px/1.35 ui-monospace,Consolas,monospace;
+ backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);
+ text-shadow:0 1px 3px rgba(0,0,0,.8);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(255,255,255,.07),0 12px 38px rgba(0,0,0,.18)
+}
+#poly-cam-panel,#poly-cam-panel *{box-sizing:border-box;font-family:ui-monospace,Consolas,monospace!important;font-style:normal!important;scrollbar-width:thin;scrollbar-color:rgba(223,244,255,.48) transparent}
+@supports selector(::-webkit-scrollbar){#poly-cam-panel,#poly-cam-panel *{scrollbar-width:auto;scrollbar-color:auto}}
+#poly-cam-panel::-webkit-scrollbar,#poly-cam-panel *::-webkit-scrollbar{width:7px;height:7px;background:transparent}
+#poly-cam-panel::-webkit-scrollbar-track,#poly-cam-panel *::-webkit-scrollbar-track{background:transparent;margin:12px 0}
+#poly-cam-panel::-webkit-scrollbar-thumb,#poly-cam-panel *::-webkit-scrollbar-thumb{border-radius:999px;background:linear-gradient(180deg,rgba(240,252,255,.55),rgba(170,217,241,.28));border:1px solid rgba(255,255,255,.25)}
+#poly-cam-panel::-webkit-scrollbar-button,#poly-cam-panel *::-webkit-scrollbar-button{display:none;width:0;height:0}
+#poly-cam-panel::-webkit-scrollbar-corner,#poly-cam-panel *::-webkit-scrollbar-corner{background:transparent}
+#poly-cam-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;font-weight:700;letter-spacing:0;margin-bottom:10px}
+#poly-cam-panel header>span:first-child{font-size:14px;font-weight:700}
 #poly-cam-panel .header-controls{display:flex;align-items:center;gap:6px}
-#poly-cam-panel button,#poly-cam-panel select,#poly-cam-panel input,#poly-cam-panel textarea{font:inherit;color:inherit;background:#202c36;border:1px solid #60707e;border-radius:5px;padding:6px;min-width:0}
-#poly-cam-panel button{cursor:pointer}#poly-cam-panel button:hover{background:#334553}
-#poly-cam-panel .state{font-size:10px}#poly-cam-panel .state[aria-pressed=true]{color:#85e0a3}
-#poly-cam-panel .minimize{width:26px;height:26px;padding:0;font-size:18px;line-height:1}
-#poly-cam-panel .hook-status{font-size:10px;color:#b2c4d0;margin:4px 0 10px}#poly-cam-panel .hook-status.active{color:#85e0a3}
-#poly-cam-panel .row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:7px 0}
+#poly-cam-panel button,#poly-cam-panel select,#poly-cam-panel input,#poly-cam-panel textarea{
+ font:inherit;color:inherit;background:rgba(15,28,44,.28);border:1px solid rgba(235,248,255,.38);border-radius:10px;padding:6px 8px;min-width:0;max-width:100%;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.18);transition:background-color 140ms ease,border-color 140ms ease
+}
+#poly-cam-panel button{cursor:pointer}#poly-cam-panel button:hover{background:rgba(125,175,215,.28);border-color:rgba(235,248,255,.6)}
+#poly-cam-panel :is(button,select,input,textarea,summary):focus-visible{outline:2px solid #8ed7ff;outline-offset:2px}
+#poly-cam-panel option{background:#16273a;color:#edf4fa}
+#poly-cam-panel .state{font-size:11px;border-radius:999px}#poly-cam-panel .state[aria-pressed=true]{color:#85e0a3;border-color:rgba(133,224,163,.55)}
+#poly-cam-panel .minimize{width:28px;height:28px;padding:0;font-size:18px;line-height:1;border-radius:999px}
+#poly-cam-panel .hook-status{font-size:11px;color:var(--poly-glass-muted);margin:4px 0 10px}#poly-cam-panel .hook-status.active{color:#85e0a3}
+#poly-cam-panel .row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0}
+#poly-cam-panel .row>label{min-width:0;overflow-wrap:anywhere}
 #poly-cam-panel select{width:150px}#poly-cam-panel input[type=range]{width:140px;padding:0}
-#poly-cam-panel input[type=range]{appearance:none;height:6px;border:0;background:#60707e;outline:none}
-#poly-cam-panel input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border:1px solid #bdd0de;border-radius:50%;background:#8fdaff;box-shadow:none}
-#poly-cam-panel input[type=range]::-moz-range-thumb{width:14px;height:14px;border:1px solid #bdd0de;border-radius:50%;background:#8fdaff}
-#poly-cam-panel .mount{width:120px}#poly-cam-panel .actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
-#poly-cam-panel .timeline{width:100%;resize:vertical;min-height:58px}#poly-cam-panel .timeline-load,#poly-cam-panel .bookmark{width:100%;margin:5px 0}
-#poly-cam-panel .small{opacity:.75;font-size:10px}#poly-cam-panel .notice{color:#8fdaff;min-height:15px;letter-spacing:0}
+#poly-cam-panel input[type=checkbox]{appearance:none;flex-shrink:0;width:14px;height:14px;padding:0;border-radius:4px;accent-color:#8ed7ff;vertical-align:middle}
+#poly-cam-panel input[type=checkbox]:checked{background:#8ed7ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8 3 3 6-6' fill='none' stroke='%2316273a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px 12px no-repeat}
+#poly-cam-panel input[type=range]{appearance:none;height:5px;border:0;border-radius:999px;background:rgba(211,232,250,.22);box-shadow:none}
+#poly-cam-panel input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border:1px solid rgba(235,248,255,.65);border-radius:50%;background:#8ed7ff;box-shadow:0 1px 5px rgba(0,0,0,.2)}
+#poly-cam-panel input[type=range]::-moz-range-thumb{width:13px;height:13px;border:1px solid rgba(235,248,255,.65);border-radius:50%;background:#8ed7ff}
+#poly-cam-panel input[type=range]::-webkit-slider-runnable-track{height:5px;border:0;border-radius:999px;background:rgba(211,232,250,.22);box-shadow:none}
+#poly-cam-panel input[type=range]::-webkit-slider-thumb{box-sizing:border-box;margin-top:-4px}
+#poly-cam-panel input[type=range]::-moz-range-track{height:5px;border:0;border-radius:999px;background:rgba(211,232,250,.22)}
+#poly-cam-panel .mount{width:110px}#poly-cam-panel .actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin:10px 0}
+#poly-cam-panel .timeline{width:100%;resize:vertical;min-height:58px;background:rgba(9,19,32,.2)}#poly-cam-panel .timeline-load,#poly-cam-panel .bookmark{width:100%;margin:5px 0}
+#poly-cam-panel .small{color:var(--poly-glass-muted);font-size:10px}#poly-cam-panel .notice{color:#8ed7ff;min-height:15px;letter-spacing:0}
 #poly-cam-panel.collapsed{width:auto;padding:9px 12px}#poly-cam-panel.collapsed header{margin:0}#poly-cam-panel.collapsed>*:not(header){display:none!important}
 #poly-cam-panel.panel-hidden{display:none!important}
-body.poly-cam-clean #poly-cam-panel{display:none}`;
+:root[data-poly-capture-ui="hidden"] #poly-cam-panel{display:none!important}
+#poly-cam-panel .capture{display:flex;align-items:center;gap:7px;margin:8px 0;color:var(--poly-glass-muted)}
+body.poly-cam-clean #poly-cam-panel{display:none}
+/* Leave PolyBot's HUD launcher and mode selector clear. */
+body:has(.polybot-ai-hud-toggle:not([hidden])) #poly-cam-panel{--poly-tools-top:92px}
+@media(min-width:680px){body:has(#polyshade-panel:not([hidden])) #poly-cam-panel{right:344px}}
+@media(max-width:679px){
+ body:has(#polyshade-panel:not([hidden])) #poly-cam-panel{max-height:calc((100dvh - var(--poly-tools-top) - 36px)/2)}
+}
+@media(prefers-reduced-motion:reduce){#poly-cam-panel *{transition:none!important}}
+`;
 
 export class UIController {
     constructor(owner) {
@@ -40,6 +80,7 @@ export class UIController {
                 <button class="minimize" data-action="collapse" title="Minimize" aria-label="Minimize Poly-Cam" aria-expanded="true">−</button>
             </span></header>
             <div class="hook-status" role="status"></div>
+            <label class="capture"><input type="checkbox" class="capture-windows"><span>Hide windows for recording (F2)</span></label>
             <div class="row"><label for="poly-cam-mode">Mode</label><select id="poly-cam-mode" class="mode">${MODES.map((m, i) => `<option value="${i}">${m}</option>`).join("")}</select></div>
             <div class="row"><label for="poly-cam-fov">FOV <span class="fov-label">72</span></label><input id="poly-cam-fov" class="fov" type="range" min="35" max="105" value="72"></div>
             <div class="row"><label>Transition</label><select class="transition"><option>CUT</option><option selected>BLEND</option></select></div>
@@ -60,6 +101,9 @@ export class UIController {
             <div class="notice" role="status"></div>
             <div class="small">F6 toggle · F7 cameras · F8 montage · F9 clean · F10 freecam<br>F4 hide/show window · Freecam: drag to look · wheel changes speed</div>`;
         document.body.appendChild(root); this.root = root;
+        const captureCheck = root.querySelector(".capture-windows");
+        this.captureUI = attachPolyCaptureUI(globalThis, hidden => { captureCheck.checked = hidden; });
+        captureCheck.addEventListener("change", () => this.captureUI.setHidden(captureCheck.checked));
         root.classList.toggle("panel-hidden", this.hidden);
         root.addEventListener("click", (event) => {
             event.stopPropagation();
@@ -147,5 +191,5 @@ export class UIController {
         rt.tracksideFixed = this.owner.fixedTracksideOrientation; rt.tracksidePlaced = true; this.owner.setMode(6); this.setNotice("Trackside camera placed.");
     }
     escape(value) { const span = document.createElement("span"); span.textContent = value; return span.innerHTML; }
-    dispose() { this.setClean(false); this.root?.remove(); this.root = null; this.style?.remove(); this.style = null; }
+    dispose() { this.captureUI?.dispose(); this.captureUI = null; this.setClean(false); this.root?.remove(); this.root = null; this.style?.remove(); this.style = null; }
 }
