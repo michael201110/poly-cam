@@ -14,7 +14,7 @@ The lifecycle check reproduces PML's source replacement: run `preInit`, execute 
 
 ## Real game smoke check
 
-The game check uses the actual PolyModLoader 0.6.3 checkout, including its PolyTrack game assets. These assets are not distributed with Poly-Cam. Point the script at your checkout and an installed Chromium browser:
+The game check uses the actual PolyModLoader 0.6.3 checkout, including its PolyTrack game assets. These assets are not distributed with PolyCam. Point the script at your checkout and an installed Chromium browser:
 
 ```powershell
 $env:POLYCAM_PML_ROOT = 'C:\path\to\PolyModLoader'

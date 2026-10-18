@@ -1,8 +1,8 @@
 {
-  "name": "Poly-Cam",
+  "name": "PolyCam",
   "id": "poly-cam",
-  "author": "Poly-Cam contributors",
+  "author": "PolyCam contributors",
   "latest": {
-    "0.6.3": "0.1.12"
+    "0.6.3": "0.1.13"
   }
 }

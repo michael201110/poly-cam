@@ -139,7 +139,7 @@ export class PolyCam {
             this.ui.setHookStatus("Camera error — see console");
             if (!this.cameraHookErrorLogged) {
                 this.cameraHookErrorLogged = true;
-                console.error("[Poly-Cam] Camera update failed:", error);
+                console.error("[PolyCam] Camera update failed:", error);
             }
         }
     }

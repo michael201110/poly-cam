@@ -4,21 +4,21 @@
 
 PolyTrack 0.6.3's `main.bundle.js` vehicle class owns both the orbit and cockpit cameras. The public methods `getPosition()`, `getQuaternion()`, and `getSpeedKmh()` provide the rendered car transform and speed. `cameraOrbit` returns the native Three.js perspective camera; its position, quaternion, FOV, `lookAt()`, and `updateProjectionMatrix()` are directly usable.
 
-The vehicle's `updateCameras(dt)` method updates both native cameras from the car transform. The render controller invokes `updateCameras` for its active car and replay cars, and its camera selection points at the chosen car's orbit/cockpit camera. Poly-Cam derives insertion tokens from the actual `updateCameras` and renderer `setCamera` method bodies in PML's game function. The first callback runs after the native camera update; the second records which camera the renderer selected. Only the selected car is composed, so replay ghosts do not advance the timeline or consume freecam input. No private fields are read by Poly-Cam itself.
+The vehicle's `updateCameras(dt)` method updates both native cameras from the car transform. The render controller invokes `updateCameras` for its active car and replay cars, and its camera selection points at the chosen car's orbit/cockpit camera. PolyCam derives insertion tokens from the actual `updateCameras` and renderer `setCamera` method bodies in PML's game function. The first callback runs after the native camera update; the second records which camera the renderer selected. Only the selected car is composed, so replay ghosts do not advance the timeline or consume freecam input. No private fields are read by PolyCam itself.
 
 Both source patches must be registered in **preInit**. PML executes `globalFunc` between `preInit` and `init`; registering a global source mixin in `init` leaves the already-created classes unchanged. That was the cause of the earlier “Hook: waiting” failure. `init` creates the controller, registers hotkeys, and mounts the panel.
 
 This hook runs on the rendering side and writes only the selected car's camera transform/FOV. It does not patch simulation worker code, physics, replay frames, or clocks. Freecam intercepts its movement keys locally so camera navigation does not drive the vehicle. Disabling restores the last native camera snapshot immediately; subsequent native camera updates run normally. The same car API is used during replay playback.
 
-Vehicle forward in this release is **+Z**, while camera forward is **−Z**. Chase, front, mounts, fly-by placement, and freecam movement respect those conventions. Smoothing keeps its own position/quaternion/FOV state between updates because the game rewrites the native camera every frame. Poly-Cam rebuilds the projection after applying FOV, even when the cinematic FOV is steady.
+Vehicle forward in this release is **+Z**, while camera forward is **−Z**. Chase, front, mounts, fly-by placement, and freecam movement respect those conventions. Smoothing keeps its own position/quaternion/FOV state between updates because the game rewrites the native camera every frame. PolyCam rebuilds the projection after applying FOV, even when the cinematic FOV is steady.
 
 Follow rigs carry their smoothed camera and target by the actual car displacement each update before smoothing relative offsets. This removes speed-dependent world-position lag while retaining damping for framing changes. Position lag is bounded and rotation response increases with speed. Fixed pass rigs are excluded from this compensation and copy their captured position/target each frame, maintaining a constant view direction.
 
-The public `getCarState()` method also provides `wheelContact` entries with world-space `position` and `normal`, `steering`, and `frames`. Poly-Cam copies contact data to estimate the current road plane, observes contact loss/return for jump/landing cues, and observes frame resets to reset shot placement. No car state is written. Pass placement projects the current plane ahead; it does not raycast upcoming geometry.
+The public `getCarState()` method also provides `wheelContact` entries with world-space `position` and `normal`, `steering`, and `frames`. PolyCam copies contact data to estimate the current road plane, observes contact loss/return for jump/landing cues, and observes frame resets to reset shot placement. No car state is written. Pass placement projects the current plane ahead; it does not raycast upcoming geometry.
 
-PolyTrack's spectator/free camera is a separate camera owned by the game controller. It bypasses the vehicle's `updateCameras` hook, so Poly-Cam currently works when PolyTrack is showing the car orbit/cockpit camera, not while the native spectator camera is selected.
+PolyTrack's spectator/free camera is a separate camera owned by the game controller. It bypasses the vehicle's `updateCameras` hook, so PolyCam currently works when PolyTrack is showing the car orbit/cockpit camera, not while the native spectator camera is selected.
 
-PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture dispatches that native toggle on entry and exit, and separately hides the Poly-Cam panel and cursor. It does not delete or replace game UI nodes. The restore action is F9.
+PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture dispatches that native toggle on entry and exit, and separately hides the PolyCam panel and cursor. It does not delete or replace game UI nodes. The restore action is F9.
 
 ## Modules
 
@@ -34,8 +34,8 @@ PolyTrack 0.6.3 binds its built-in `ToggleUI` action to `KeyH`. Clean Capture di
 
 ## Compatibility boundary
 
-PolyTrack 0.6.3/PML 0.6.3 are the only declared target. The PML API exposes class mixins and public camera data, but it does not expose a stable high-level camera override API. Before supporting a later PolyTrack release, verify the car class scope, `updateCameras` implementation, token, and render camera selection against that release's bundle. If a later version changes these, Poly-Cam should fail to load that target rather than guessing tokens.
+PolyTrack 0.6.3/PML 0.6.3 are the only declared target. The PML API exposes class mixins and public camera data, but it does not expose a stable high-level camera override API. Before supporting a later PolyTrack release, verify the car class scope, `updateCameras` implementation, token, and render camera selection against that release's bundle. If a later version changes these, PolyCam should fail to load that target rather than guessing tokens.
 
 ## Performance
 
-Rig output, smoothing state, and quaternion scratch values are reused per vehicle. PolyTrack's public position/quaternion getters return fresh values, so the hook consumes those API allocations. No geometry searches or scene traversal occur per frame. Both selected-car camera projections are rebuilt after Poly-Cam's FOV is applied.
+Rig output, smoothing state, and quaternion scratch values are reused per vehicle. PolyTrack's public position/quaternion getters return fresh values, so the hook consumes those API allocations. No geometry searches or scene traversal occur per frame. Both selected-car camera projections are rebuilt after PolyCam's FOV is applied.

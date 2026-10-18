@@ -73,11 +73,11 @@ export class UIController {
         if (this.root || !document.body) return;
         this.style = document.createElement("style"); this.style.textContent = STYLE; document.head.appendChild(this.style);
         const root = document.createElement("section"); root.id = "poly-cam-panel";
-        root.setAttribute("aria-label", "Poly-Cam camera controls");
+        root.setAttribute("aria-label", "PolyCam camera controls");
         root.innerHTML = `
-            <header><span>POLY-CAM</span><span class="header-controls">
-                <button class="state" data-action="toggle" title="Enable or disable Poly-Cam" aria-pressed="false">OFF</button>
-                <button class="minimize" data-action="collapse" title="Minimize" aria-label="Minimize Poly-Cam" aria-expanded="true">−</button>
+            <header><span>PolyCam</span><span class="header-controls">
+                <button class="state" data-action="toggle" title="Enable or disable PolyCam" aria-pressed="false">OFF</button>
+                <button class="minimize" data-action="collapse" title="Minimize" aria-label="Minimize PolyCam" aria-expanded="true">−</button>
             </span></header>
             <div class="hook-status" role="status"></div>
             <label class="capture"><input type="checkbox" class="capture-windows"><span>Hide windows for recording (F2)</span></label>
@@ -114,7 +114,7 @@ export class UIController {
             if (action === "previous") this.owner.nextMode(-1);
             if (action === "montage") this.owner.toggleMontage();
             if (action === "bookmark") {
-                if (!this.lastCamera) { this.setNotice("Enable Poly-Cam in a run before saving a camera."); return; }
+                if (!this.lastCamera) { this.setNotice("Enable PolyCam in a run before saving a camera."); return; }
                 const name = prompt("Bookmark name", `Camera ${this.owner.bookmarks.length + 1}`); if (name) this.owner.saveBookmark(name);
             }
             if (action === "trackside") this.placeTrackside();
@@ -147,7 +147,7 @@ export class UIController {
         this.collapsed = !this.collapsed; this.root.classList.toggle("collapsed", this.collapsed);
         const button = this.root.querySelector(".minimize"); button.textContent = this.collapsed ? "+" : "−";
         button.title = this.collapsed ? "Expand" : "Minimize";
-        button.setAttribute("aria-label", this.collapsed ? "Expand Poly-Cam" : "Minimize Poly-Cam");
+        button.setAttribute("aria-label", this.collapsed ? "Expand PolyCam" : "Minimize PolyCam");
         button.setAttribute("aria-expanded", String(!this.collapsed));
     }
     toggleHidden() {

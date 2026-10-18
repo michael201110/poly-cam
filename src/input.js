@@ -14,7 +14,7 @@ export class InputController {
     }
 
     initialize(pml) {
-        pml.registerBindCategory("Poly-Cam");
+        pml.registerBindCategory("PolyCam");
         const bind = (name, id, key, callback, filter = () => true) => pml.registerKeybind(name, id, "keydown", key, null, (event) => {
             if (!filter(event)) return;
             if (event.target?.closest?.("input, select, textarea, [contenteditable=true]") && !/^F\d+$/.test(event.code)) return;
@@ -23,14 +23,14 @@ export class InputController {
             if (event.repeat) return;
             callback(event);
         });
-        bind("Toggle Poly-Cam", "polyCamToggle", "F6", () => this.owner.toggleEnabled());
+        bind("Toggle PolyCam", "polyCamToggle", "F6", () => this.owner.toggleEnabled());
         bind("Next camera", "polyCamNext", "F7", (e) => this.owner.nextMode(e.shiftKey ? -1 : 1));
         bind("Montage Mode", "polyCamMontage", "F8", () => this.owner.toggleMontage());
         bind("Clean Capture", "polyCamClean", "F9", () => this.owner.toggleCleanCapture());
         bind("Freecam", "polyCamFreecam", "F10", () => this.toggleFreecam());
         // Use a new binding ID so saved F11 assignments from v0.1.8 do not
         // override the new default and keep blocking browser fullscreen.
-        bind("Hide/show Poly-Cam window", "polyCamWindowVisibility", "F4", () => this.owner.ui.toggleHidden(),
+        bind("Hide/show PolyCam window", "polyCamWindowVisibility", "F4", () => this.owner.ui.toggleHidden(),
             event => !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey);
         window.addEventListener("keydown", this.onKeyDown, true);
         window.addEventListener("keyup", this.onKeyUp, true);

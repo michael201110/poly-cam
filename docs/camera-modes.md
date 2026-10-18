@@ -42,4 +42,4 @@ The timeline is a JSON array with `time` (seconds) and `mode` (mode name or nume
 [{"time":0,"mode":"Trackside Cam"},{"time":2.2,"mode":"Low Chase"},{"time":4.8,"mode":"Drone Cam"}]
 ```
 
-Load, play, pause, and reset it from the panel. Use **Loop timeline** to repeat playback. Montage and timeline play enable Poly-Cam automatically.
+Load, play, pause, and reset it from the panel. Use **Loop timeline** to repeat playback. Montage and timeline play enable PolyCam automatically.
